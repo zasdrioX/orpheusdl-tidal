@@ -598,6 +598,7 @@ class ModuleInterface:
             bitrate=bitrate,
             duration=track_data.get('duration'),
             cover_url=cover_url,
+            url=f"https://tidal.com/browse/album/{album_id}",  # <-- ★★★ ALBUM URL FIX IS HERE ★★★
             explicit=track_data.get('explicit'),
             tags=self.convert_tags(track_data, album_data, mqa_file),
             codec=track_codec,
@@ -854,5 +855,6 @@ class ModuleInterface:
             copyright=track_data.get('copyright'),
             replay_gain=track_data.get('replayGain'),
             replay_peak=track_data.get('peak'),
+            comment=f"https://tidal.com/browse/track/{track_data.get('id')}",  # <-- ★★★ COMMENT/TRACK URL FIX IS HERE ★★★
             extra_tags=extra_tags
         )
