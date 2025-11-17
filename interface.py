@@ -29,8 +29,7 @@ module_information = ModuleInformation(
         'prefer_ac4': False,
         'fix_mqa': True
     },
-    # currently too broken to keep it, cover needs to be jpg else crash, problems on termux due to pillow
-    # flags=ModuleFlags.needs_cover_resize,
+    flags=ModuleFlags.needs_cover_resize,
     session_storage_variables=['sessions'],
     netlocation_constant='tidal',
     test_url='https://tidal.com/browse/track/92265335'
@@ -199,11 +198,15 @@ class ModuleInterface:
         return True
 
     @staticmethod
-    def _generate_artwork_url(cover_id: str, size: int, max_size: int = 1280):
-        # not the best idea, but it rounds the self.cover_size to the nearest number in supported_sizes, 1281 is needed
-        # for the "uncompressed" cover
-        supported_sizes = [80, 160, 320, 480, 640, 1080, 1280, 1281]
-        best_size = min(supported_sizes, key=lambda x: abs(x - size))
+    def _generate_artwork_url(cover_id: str, size: int | str, max_size: int = 1280):
+        # --- START OF FIX (Handle "default" resolution) ---
+        if size == "default":
+            best_size = 1281 # Use a number > max_size to trigger 'origin.jpg'
+        else:
+            supported_sizes = [80, 160, 320, 480, 640, 1080, 1280, 1281]
+            best_size = min(supported_sizes, key=lambda x: abs(x - size))
+        # --- END OF FIX ---
+
         # only supports 80x80, 160x160, 320x320, 480x480, 640x640, 1080x1080 and 1280x1280 only for non playlists
         # return "uncompressed" cover if self.cover_resolution > max_size
         image_name = '{0}x{0}.jpg'.format(best_size) if best_size <= max_size else 'origin.jpg'
@@ -308,6 +311,7 @@ class ModuleInterface:
             creator_id=playlist_data['creator'].get('id'),
             cover_url=cover_url,
             cover_type=cover_type,
+            all_track_cover_jpg_url=cover_url, # <-- Added this for playlist cover download-once
             track_extra_kwargs={
                 'data': {track.get('item').get('id'): track.get('item') for track in playlist_tracks.get('items')}
             }
@@ -424,6 +428,7 @@ class ModuleInterface:
             duration=album_data.get('duration'),
             cover_url=cover_url,
             cover_type=cover_type,
+            all_track_cover_jpg_url=cover_url,
             animated_cover_url=self._generate_animated_artwork_url(album_data.get('videoCover')) if album_data.get(
                 'videoCover') else None,
             artist=album_data.get('artist').get('name'),
@@ -598,7 +603,7 @@ class ModuleInterface:
             bitrate=bitrate,
             duration=track_data.get('duration'),
             cover_url=cover_url,
-            url=f"https://tidal.com/browse/album/{album_id}",  # <-- ★★★ ALBUM URL FIX IS HERE ★★★
+            url=f"https://tidal.com/browse/album/{album_id}",
             explicit=track_data.get('explicit'),
             tags=self.convert_tags(track_data, album_data, mqa_file),
             codec=track_codec,
@@ -855,6 +860,6 @@ class ModuleInterface:
             copyright=track_data.get('copyright'),
             replay_gain=track_data.get('replayGain'),
             replay_peak=track_data.get('peak'),
-            comment=f"https://tidal.com/browse/track/{track_data.get('id')}",  # <-- ★★★ COMMENT/TRACK URL FIX IS HERE ★★★
+            comment=f"https://tidal.com/browse/track/{track_data.get('id')}",
             extra_tags=extra_tags
         )
